@@ -65,8 +65,21 @@ const title = audio.title || "Noma'lum qo‘shiq";
 const artist = audio.performer || "Noma'lum ijrochi";
 
 try {
+const caption =
+"━━━━━━━━━━━━━━━━━━\n" +
+"🎧 SHUNCHAKI MUSIQA UZ\n" +
+"━━━━━━━━━━━━━━━━━━\n\n" +
+🎵 Nomi: ${title}\n +
+🎤 Ijrochi: ${artist}\n\n +
+"🎶 Musiqadan zavqlaning!\n\n" +
+"📢 @ShunchakiMusiqaUz";
+
+
 await ctx.api.sendAudio(CHANNEL, audio.file_id, {
-caption: "🎵 ${title}\n🎤 ${artist}\n\n📢 @ShunchakiMusiqaUz"
+caption: caption
+});
+
+
 });
 
 await ctx.reply("✅ Musiqa kanalingga joylandi!");

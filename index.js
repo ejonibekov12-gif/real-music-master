@@ -1,6 +1,6 @@
 import { Bot, InlineKeyboard } from "grammy";
 
-const TOKEN = process.env.BOT_TOKEN;
+const TOKEN = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL = "@ShunchakiMusiqaUz";
 const CHANNEL_URL = "https://t.me/ShunchakiMusiqaUz";
 
@@ -20,7 +20,10 @@ function subscriptionKeyboard() {
 async function isSubscribed(userId) {
   try {
     const member = await bot.api.getChatMember(CHANNEL, userId);
-    return ["member", "administrator", "creator"].includes(member.status);
+
+    return ["member", "administrator", "creator"].includes(
+      member.status
+    );
   } catch (error) {
     console.error("Obunani tekshirish xatosi:", error.message);
     return false;
@@ -41,12 +44,15 @@ bot.callbackQuery("check_subscription", async (ctx) => {
   if (!subscribed) {
     await ctx.answerCallbackQuery({
       text: "❌ Avval kanalga obuna bo‘l!",
-      show_alert: true
+      show_alert: true,
     });
     return;
   }
 
-  await ctx.answerCallbackQuery("✅ Obuna tasdiqlandi!");
+  await ctx.answerCallbackQuery({
+    text: "✅ Obuna tasdiqlandi!",
+  });
+
   await ctx.reply("✅ Obuna tasdiqlandi! Endi menga musiqa yubor.");
 });
 
@@ -76,14 +82,15 @@ bot.on("message:audio", async (ctx) => {
 
   try {
     await ctx.api.sendAudio(CHANNEL, audio.file_id, {
-      caption: caption
+      caption,
     });
 
     await ctx.reply("✅ Musiqa kanalingga joylandi!");
   } catch (error) {
     console.error("Musiqani joylash xatosi:", error.message);
+
     await ctx.reply(
-      "❌ Musiqa joylanmadi. Kanal va bot ruxsatlarini tekshirish kerak."
+      "❌ Musiqa joylanmadi. Botning kanalga administrator sifatida qo‘shilganini va ruxsatlarini tekshir."
     );
   }
 });

@@ -68,13 +68,13 @@ bot.on("message:audio", async (ctx) => {
   const artist = audio.performer || "Noma’lum ijrochi";
 
   const caption =
-    "━━━━━━━━━━━━━━━━━━\n" +
-    "🎧 SHUNCHAKI MUSIQA UZ\n" +
-    "━━━━━━━━━━━━━━━━━━\n\n" +
-    `🎵 Nomi: ${title}\n` +
-    `🎤 Ijrochi: ${artist}\n\n` +
-    "🎶 Musiqadan zavqlaning!\n\n" +
-    "📢 @ShunchakiMusiqaUz";
+  "━━━━━━━━━━━━━━━━━━\n" +
+  "🎧 SHUNCHAKI MUSIQA UZ\n" +
+  "━━━━━━━━━━━━━━━━━━\n\n" +
+  `🎵 Nomi: ${title}\n` +
+  `🎤 Ijrochi: ${artist}\n\n` +
+  "🎶 Musiqadan zavqlaning!\n\n" +
+  "📢 @ShunchakiMusiqaUz";
 
   try {
     await ctx.api.sendAudio(CHANNEL, audio.file_id, {

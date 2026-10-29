@@ -1,6 +1,9 @@
 import { Bot, InlineKeyboard } from "grammy";
 
-const TOKEN = process.env.BOT_TOKEN;
+const TOKEN =
+  process.env.BOT_TOKEN ||
+  process.env.TELEGRAM_BOT_TOKEN ||
+  process.env.TOKEN;
 const CHANNEL = "@ShunchakiMusiqaUz";
 const CHANNEL_URL = "https://t.me/ShunchakiMusiqaUz";
 
@@ -81,21 +84,4 @@ bot.on("message:audio", async (ctx) => {
   try {
     await ctx.api.sendAudio(CHANNEL, audio.file_id, {
       caption,
-      reply_markup: new InlineKeyboard().url("📢 Kanalimiz", CHANNEL_URL),
-    });
-
-    await ctx.reply("✅ Musiqa kanalingizga joylandi!");
-  } catch (error) {
-    console.error("Musiqa joylash xatosi:", error.message);
-    await ctx.reply(
-      "❌ Musiqa joylanmadi. Botning kanal adminligi va ruxsatlarini tekshiring."
-    );
-  }
-});
-
-bot.catch((error) => {
-  console.error("Bot xatosi:", error.message);
-});
-
-bot.start();
-console.log("🎵 Shunchaki Musiqa Uz boti ishga tushdi!");
+      reply_markup: new InlineKeyboard().

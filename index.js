@@ -1,87 +1,112 @@
-import { Bot, InlineKeyboard } from "grammy";
+const TelegramBot = require("node-telegram-bot-api");
+const fs = require("fs");
 
-const TOKEN =
-  process.env.BOT_TOKEN ||
-  process.env.TELEGRAM_BOT_TOKEN ||
-  process.env.TOKEN;
-const CHANNEL = "@ShunchakiMusiqaUz";
-const CHANNEL_URL = "https://t.me/ShunchakiMusiqaUz";
+// ====== SOZLAMALAR ======
+// Token kodga YOZILMAYDI. FadeHost panelida BOT_TOKEN nomli o'zgaruvchi qiling.
+const TOKEN = process.env.8867504574:AAGd_cKhOmt7uzfb02NdkUUFO0YKHY0HKaw;
+const REQUIRED = "@ShunchakiMusiqaUz"; // majburiy obuna kanali
+// ========================
 
 if (!TOKEN) {
-  throw new Error("BOT_TOKEN sozlamasi topilmadi!");
+  console.error("BOT_TOKEN topilmadi! Panelda environment variable qo'shing.");
+  process.exit(1);
 }
 
-const bot = new Bot(TOKEN);
+const DB = "channels.json";
+const bot = new TelegramBot(TOKEN, { polling: true });
 
-function subscriptionKeyboard() {
-  return new InlineKeyboard()
-    .url("📢 Kanalga obuna bo'lish", CHANNEL_URL)
-    .row()
-    .text("✅ Obuna bo'ldim", "check_subscription");
-}
-
-async function isSubscribed(userId) {
+function load() {
   try {
-    const member = await bot.api.getChatMember(CHANNEL, userId);
-    return ["member", "administrator", "creator"].includes(member.status);
-  } catch (error) {
-    console.error("Obuna tekshirish xatosi:", error.message);
-    return false;
+    return JSON.parse(fs.readFileSync(DB, "utf8"));
+  } catch {
+    return {};
   }
 }
 
-bot.command("start", async (ctx) => {
-  await ctx.reply(
-    "🎧 Assalomu alaykum!\n\n" +
-      "🎵 Menga musiqa yuboring, uni kanalimga joylayman.\n\n" +
-      "📢 Avval kanalga obuna bo'ling!",
-    { reply_markup: subscriptionKeyboard() }
+function save(data) {
+  fs.writeFileSync(DB, JSON.stringify(data));
+}
+
+async function checkSub(msg) {
+  const chatId = msg.chat.id;
+  try {
+    const m = await bot.getChatMember(REQUIRED, msg.from.id);
+    if (["member", "administrator", "creator"].includes(m.status)) return true;
+  } catch (e) {}
+  await bot.sendMessage(
+    chatId,
+    "Avval kanalga obuna bo'ling, keyin /start yuboring.",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "Kanalga obuna bo'lish", url: `https://t.me/${REQUIRED.slice(1)}` }],
+        ],
+      },
+    }
+  );
+  return false;
+}
+
+bot.onText(/^\/start/, async (msg) => {
+  if (!(await checkSub(msg))) return;
+  bot.sendMessage(
+    msg.chat.id,
+    "Salom! Foydalanish:\n" +
+      "1. Botni o'z kanalingizga admin qiling (Xabar yuborish ruxsati bilan)\n" +
+      "2. Kanal username'ini yuboring (masalan: @kanalim)\n" +
+      "3. Menga musiqa yuboring, men kanalingizga joylayman"
   );
 });
 
-bot.callbackQuery("check_subscription", async (ctx) => {
-  const subscribed = await isSubscribed(ctx.from.id);
+bot.on("message", async (msg) => {
+  if (!msg.text || msg.text.startsWith("/")) return;
+  if (!(await checkSub(msg))) return;
 
-  if (subscribed) {
-    await ctx.answerCallbackQuery({ text: "✅ Obuna tasdiqlandi!" });
-    await ctx.reply("🎵 Ajoyib! Endi menga musiqa yuborishingiz mumkin.");
-  } else {
-    await ctx.answerCallbackQuery({
-      text: "❌ Avval kanalga obuna bo'ling!",
-      show_alert: true,
-    });
+  const chatId = msg.chat.id;
+  const ch = msg.text.trim();
+
+  if (!ch.startsWith("@")) {
+    return bot.sendMessage(chatId, "Kanal username'i @ bilan boshlanishi kerak.");
+  }
+
+  let userM, botM;
+  try {
+    const me = await bot.getMe();
+    userM = await bot.getChatMember(ch, msg.from.id);
+    botM = await bot.getChatMember(ch, me.id);
+  } catch (e) {
+    return bot.sendMessage(chatId, "Kanal topilmadi yoki bot u yerda admin emas.");
+  }
+
+  if (!["administrator", "creator"].includes(userM.status)) {
+    return bot.sendMessage(chatId, "Siz bu kanalda admin emassiz.");
+  }
+  if (botM.status !== "administrator") {
+    return bot.sendMessage(chatId, "Avval botni kanalga admin qiling.");
+  }
+
+  const data = load();
+  data[String(msg.from.id)] = ch;
+  save(data);
+  bot.sendMessage(chatId, `Kanal saqlandi: ${ch} ✅\nEndi musiqa yuboring.`);
+});
+
+bot.on("audio", async (msg) => {
+  if (!(await checkSub(msg))) return;
+
+  const chatId = msg.chat.id;
+  const ch = load()[String(msg.from.id)];
+  if (!ch) {
+    return bot.sendMessage(chatId, "Avval kanal username'ini yuboring.");
+  }
+
+  try {
+    await bot.sendAudio(ch, msg.audio.file_id, { caption: msg.caption || "" });
+    bot.sendMessage(chatId, "Kanalga joylandi ✅");
+  } catch (e) {
+    bot.sendMessage(chatId, "Joylab bo'lmadi. Bot kanalda admin ekanini tekshiring.");
   }
 });
 
-bot.on("message:audio", async (ctx) => {
-  const subscribed = await isSubscribed(ctx.from.id);
-
-  if (!subscribed) {
-    await ctx.reply(
-      "📢 Musiqa yuborishdan oldin kanalga obuna bo'ling!",
-      { reply_markup: subscriptionKeyboard() }
-    );
-    return;
-  }
-
-  const audio = ctx.message.audio;
-  const title = audio.title || "Noma'lum qo'shiq";
-  const artist = audio.performer || "Noma'lum ijrochi";
-
-  const caption = [
-    "━━━━━━━━━━━━━━━━━━",
-    "🎧 SHUNCHAKI MUSIQA UZ",
-    "━━━━━━━━━━━━━━━━━━",
-    "",
-    `🎵 Nomi: ${title}`,
-    `🎤 Ijrochi: ${artist}`,
-    "",
-    "🎶 Musiqadan zavqlaning!",
-    "",
-    "📢 @ShunchakiMusiqaUz",
-  ].join("\n");
-
-  try {
-    await ctx.api.sendAudio(CHANNEL, audio.file_id, {
-      caption,
-      reply_markup: new InlineKeyboard().
+bot.on("polling_error", (e) => console.error("Polling xato:", e.message));
+console.log("Bot ishga tushdi ✅");

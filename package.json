@@ -1,12 +1,12 @@
 {
   "name": "real-music-master",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Telegram music bot that posts songs to my channel.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "grammy": "^1.30.0"
+    "node-telegram-bot-api": "^0.66.0"
   }
 }
